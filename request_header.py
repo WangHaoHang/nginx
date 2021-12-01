@@ -1,20 +1,36 @@
 class header(object):
     def __init__(self):
+        # flag:0 request 1: response
+        self.flag = 0
         self.request_url = ['GET', '/', 'HTTP/1.2']
         # 通用首部
-        self.common_request_info = {}
-        self.common_request_info['Connection'] = None
-        self.common_request_info['Date'] = None
-        self.common_request_info['MIME-Version'] = None
-        self.common_request_info['Trailer'] = None
-        self.common_request_info['Transfer-Encoding'] = None
-        self.common_request_info['Update'] = None
-        self.common_request_info['Via'] = None
-        ##通用缓存首部
-        self.common_request_info['Cache-Control'] = None
-        self.common_request_info['Pragma'] = None
+        self.common_info = {}
         # 请求首部
         self.request_info = {}
+        # 响应首部
+        self.response_info = {}
+        # 实体首部
+        self.enitity_info = {}
+        # 扩展首部
+        self.extend_info = {}
+        # 所有首部
+        self.all_info = {}
+        # 首部清空
+        self.clear()
+
+    def clear(self):
+        # 通用首部
+        self.common_info['Connection'] = None
+        self.common_info['Date'] = None
+        self.common_info['MIME-Version'] = None
+        self.common_info['Trailer'] = None
+        self.common_info['Transfer-Encoding'] = None
+        self.common_info['Update'] = None
+        self.common_info['Via'] = None
+        ##通用缓存首部
+        self.common_info['Cache-Control'] = None
+        self.common_info['Pragma'] = None
+        # 请求首部
         self.request_info['Client-IP'] = None
         self.request_info['From'] = None
         self.request_info['Host'] = None
@@ -48,7 +64,6 @@ class header(object):
         self.request_info['Proxy-Authorization'] = None
         self.request_info['Proxy-Connection'] = None
         # 响应首部
-        self.response_info = {}
         self.response_info['Age'] = None
         self.response_info['Public'] = None
         self.response_info['Retry-After'] = None
@@ -64,7 +79,6 @@ class header(object):
         self.response_info['Set-Cookie2'] = None
         self.response_info['WWW-Authenticate'] = None
         # 实体首部
-        self.enitity_info = {}
         self.enitity_info['Allow'] = None
         self.enitity_info['Location'] = None
         ## 内容首部
@@ -80,14 +94,72 @@ class header(object):
         self.enitity_info['ETag'] = None
         self.enitity_info['Expires'] = None
         self.enitity_info['Last-Modified'] = None
-        # 扩展首部
-        self.extend_info = {}
+        self.all_info.clear()
+
+    def add_info(self, data: str):
+        data = data.strip()
+        dats = data.split(":")
+        size = len(dats)
+        self.all_info[dats[0].strip()] = dats[1]
+        for i in range(2,size):
+            self.all_info[dats[0].strip()] += ':'+dats[i]
+        self.all_info[dats[0].strip()] = self.all_info[dats[0].strip()].strip()
+
+
+    def add_url(self, data: str):
+        self.request_url = data.split(' ')
+        method = self.request_url[0].lower()
+        if method == 'get':
+            self.flag = 0
+        elif method == 'post':
+            self.flag = 1
+        elif method == 'put':
+            self.flag = 2
+        elif method == 'delete':
+            self.flag = 3
+        elif method == 'head':
+            self.flag = 4
+        else:
+            self.flag = 5
 
     def string(self):
-        for key,value in self.request_info.items():
-            print(key,":",value)
+        result = ""
+        for key, value in self.all_info.items():
+            if value is None:
+                continue
+            else:
+                result += key + ": " + value + '\n'
+        return result
+
+    def string_flag(self):
+        result = ""
+        for key, value in self.common_info.items():
+            if value is None:
+                continue
+            else:
+                result += key + ": " + value + '\n'
+        if self.flag == 0:
+            for key, value in self.request_info.items():
+                if value is None:
+                    continue
+                else:
+                    result += key + ": " + value + '\n'
+        else:
+            for key, value in self.response_info.items():
+                if value is None:
+                    continue
+                else:
+                    result += key + ": " + value + '\n'
+        return result
 
 
 if __name__ == '__main__':
     he = header()
-    he.string()
+    print(he.string())
+    x = 'GET / HTTP/1.1'
+    s = x.split(' ')
+    print(s)
+    buf = ''
+    for ss in s:
+        buf += ss + ' '
+    print(buf)
