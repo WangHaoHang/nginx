@@ -2,6 +2,7 @@ import socket, time
 import threading
 from multiprocessing import pool
 from request_header import header
+from config import Config
 
 
 def transform_info(src_sock: socket.socket, dst_sock: socket.socket):
@@ -30,15 +31,21 @@ class NginxObj(object):
     进行nginx 点对点传输
     '''
 
-    def __init__(self, src_sock: socket.socket, dst_sock: socket.socket):
+    def __init__(self, src_sock: socket.socket, dst_sock: socket.socket, config: Config):
         self.src_sock = src_sock
         self.dst_sock = dst_sock
         self.flag = True
-        self.config = []
+        self.config = config
         self.head_info = header()
         self.xdata = ''
+        self.orgin_context = ''
 
     def parse_data(self, data: str):
+        '''
+        解析 报文
+        :param data:
+        :return:
+        '''
         dats = data.split('\n')
         self.head_info.add_url(dats[0])
         flag = 0
@@ -55,10 +62,50 @@ class NginxObj(object):
         print(self.head_info.string())
         print('head_info-end')
 
-    def transform_info(self, data: str):
-        pass
+    def get_send_info(self):
+        '''
+
+        :return:
+        '''
+        # request url
+        buf = ''
+        for x in self.head_info.request_url:
+            buf += x.strip() + ' '
+        buf = buf.strip()
+        buf += '\n'
+        # request head
+        buf += self.head_info.string()
+        # request data
+        buf += self.xdata
+        return buf
+
+    def set_head_info(self):
+        '''
+
+        :return:
+        '''
+        # 修改 Host
+        remote_addr = str(self.config.remote_addr[0][0])
+        if remote_addr.startswith('http'):
+            self.head_info.all_info['Host'] = remote_addr.replace('http://', '')
+        else:
+            self.head_info.all_info['Host'] = remote_addr
+
+        # 修改 request_url
+        now_url = self.head_info.request_url[1]
+        now_url = str(now_url)
+        local_url = self.config.local_url
+        remote_url = self.config.remote_url[0]
+        if now_url.find(remote_url) >= 0:
+            self.head_info.request_url[1] = now_url.replace(local_url, remote_url)
 
     def send_str(self, sock: socket.socket, data: str):
+        '''
+
+        :param sock:
+        :param data:
+        :return:
+        '''
         flag = True
         try:
             buf = bytes(data, encoding='utf-8')
@@ -69,6 +116,11 @@ class NginxObj(object):
         return flag
 
     def recv_str(self, sock: socket.socket):
+        '''
+
+        :param sock:
+        :return:
+        '''
         flag = True
         # sock.settimeout(10)
         buf = bytes()
@@ -89,6 +141,12 @@ class NginxObj(object):
         return buf, flag
 
     def transform_data(self, src_sock: socket.socket, dst_sock: socket.socket):
+        '''
+
+        :param src_sock:
+        :param dst_sock:
+        :return:
+        '''
         flag = True
         try:
             buf = bytes()
@@ -96,14 +154,14 @@ class NginxObj(object):
             while temp != None and len(temp) == 1024:
                 buf += temp
                 temp = src_sock.recv(1024)
-            if temp != None:
+            if temp is not None:
                 buf += temp
             buf = str(buf, encoding='utf-8')
             print(buf)
             buf = buf.replace('localhost:8088', 'www.baidu.com')
             buf = bytes(buf, encoding='utf-8')
             dst_sock.send(buf)
-            print(str(buf,encoding='utf-8'))
+            print(str(buf, encoding='utf-8'))
         except Exception as e:
             print('Exception:', e)
             flag = False
@@ -117,26 +175,31 @@ class NginxObj(object):
 
         while self.flag:
             print('the data from source to the destination')
+            # 之前成功的方法
             # self.transform_data(self.src_sock,self.dst_sock)
 
             buf, self.flag = self.recv_str(self.src_sock)
             if self.flag == False:
                 break
-            print('orgin_buf:')
-            print(buf)
+            self.orgin_context = buf
+
+            print('origin_context:')
+            print(self.orgin_context)
+
+            # 清空 解析数据
             self.head_info.clear()
             self.xdata = ''
+
+            # 数据解析
             self.parse_data(buf)
-            self.head_info.all_info['Host'] = 'www.baidu.com'
-            # self.head_info.all_info['Cookie'] = None
-            buf = ''
-            for x in self.head_info.request_url:
-                buf += x.strip() +' '
-            buf = buf.strip()
-            buf += '\n'
-            buf += self.head_info.string()
-            buf += self.xdata
-            print('buf:')
+
+            # 数据头部转换
+            self.set_head_info()
+            # self.head_info.all_info['Host'] = 'www.baidu.com'
+
+            # 生成新的报文
+            buf = self.get_send_info()
+            print('modify_context:')
             print(buf)
             self.flag = self.send_str(self.dst_sock, data=buf)
         print('src2dst End !')
@@ -152,7 +215,7 @@ class NginxObj(object):
             buf, self.flag = self.recv_str(self.dst_sock)
             if self.flag == False:
                 break
-            print(buf,self.flag)
+            print(buf, self.flag)
             self.flag = self.send_str(self.src_sock, data=buf)
         print('dst2src End !')
 
@@ -167,7 +230,7 @@ class NginxObj(object):
         t2 = threading.Thread(target=self.dst2src, name='dst2src')
         t2.start()
         while True:
-            time.sleep(1)
+            time.sleep(60)
             print(self.flag, getattr(self.src_sock, "_closed"), getattr(self.dst_sock, "_closed"))
             if self.flag == False:
                 break
@@ -178,14 +241,18 @@ class NginxObj(object):
         self.shutdown()
 
     def shutdown(self):
+        '''
+
+        :return:
+        '''
         try:
-            if self.src_sock != None:
+            if self.src_sock is not None:
                 self.src_sock.close()
         except Exception as e:
             print('shutdown src sock!', e)
 
         try:
-            if self.dst_sock != None:
+            if self.dst_sock is not None:
                 self.dst_sock.close()
         except Exception as e:
             print('shut down the dst sock!', e)
@@ -201,3 +268,7 @@ class NginxManager(object):
 
     def add(self, nginx_obj: NginxObj):
         self.nginx_objs.append(nginx_obj)
+
+
+if __name__ == '__main__':
+    pass

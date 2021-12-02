@@ -9,6 +9,11 @@ class Config(object):
 
 
 def read_config_info(file_name) -> [str]:
+    '''
+
+    :param file_name:
+    :return:
+    '''
     fd = None
     try:
         fd = open(file_name, 'r')
@@ -22,6 +27,11 @@ def read_config_info(file_name) -> [str]:
 
 
 def pro_line(line: str):
+    '''
+
+    :param line:
+    :return:
+    '''
     line = line.strip()
     datas = line.split(' ')
     if len(datas) != 2:
@@ -30,6 +40,11 @@ def pro_line(line: str):
 
 
 def str2list1(data: str) -> []:
+    '''
+
+    :param data:
+    :return:
+    '''
     result = []
     data = data.replace('[', '')
     data = data.replace(']', '')
@@ -41,6 +56,11 @@ def str2list1(data: str) -> []:
 
 
 def str2list2(data: str) -> [[]]:
+    '''
+
+    :param data:
+    :return:
+    '''
     results = []
     index_start = []
     index_end = []
@@ -58,6 +78,11 @@ def str2list2(data: str) -> [[]]:
 
 
 def parse_config(datas: [str]) -> [Config]:
+    '''
+
+    :param datas:
+    :return:
+    '''
     result = []
     temp = None
     for data in datas:
@@ -93,6 +118,10 @@ def parse_config(datas: [str]) -> [Config]:
 
 
 def configs():
+    '''
+
+    :return:
+    '''
     datas = read_config_info('nginx.conf')
     configs_ = parse_config(datas)
     flag = 1
@@ -107,5 +136,7 @@ def configs():
     return configs_
 
 if __name__ == '__main__':
-    configs()
-    # x = "hello"
+    # configs()
+    x = "\nhello\n"
+    # print(x)
+    print(x.strip())

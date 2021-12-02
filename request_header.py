@@ -106,6 +106,7 @@ class header(object):
         self.all_info[dats[0].strip()] = self.all_info[dats[0].strip()].strip()
 
 
+
     def add_url(self, data: str):
         self.request_url = data.split(' ')
         method = self.request_url[0].lower()
