@@ -10,10 +10,10 @@ def transform_info(src_sock: socket.socket, dst_sock: socket.socket):
     try:
         buf = bytes()
         temp = src_sock.recv(1024)
-        while temp != None and len(temp) == 1024:
+        while temp is not None and len(temp) == 1024:
             buf += temp
             temp = src_sock.recv(1024)
-        if temp != None:
+        if temp is not None:
             buf += temp
         buf = str(buf, encoding='utf-8')
         buf = buf.replace('localhost:8088', 'www.baidu.com')
@@ -151,7 +151,7 @@ class NginxObj(object):
         try:
             buf = bytes()
             temp = src_sock.recv(1024)
-            while temp != None and len(temp) == 1024:
+            while temp is not None and len(temp) == 1024:
                 buf += temp
                 temp = src_sock.recv(1024)
             if temp is not None:
@@ -179,7 +179,7 @@ class NginxObj(object):
             # self.transform_data(self.src_sock,self.dst_sock)
 
             buf, self.flag = self.recv_str(self.src_sock)
-            if self.flag == False:
+            if not self.flag:
                 break
             self.orgin_context = buf
 
@@ -213,7 +213,7 @@ class NginxObj(object):
         while self.flag:
             print('the data from destination to the source')
             buf, self.flag = self.recv_str(self.dst_sock)
-            if self.flag == False:
+            if not self.flag:
                 break
             print(buf, self.flag)
             self.flag = self.send_str(self.src_sock, data=buf)
@@ -265,6 +265,7 @@ class NginxManager(object):
 
     def __init__(self):
         self.nginx_objs = []
+        self.configs = []
 
     def add(self, nginx_obj: NginxObj):
         self.nginx_objs.append(nginx_obj)

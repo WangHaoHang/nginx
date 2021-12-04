@@ -26,7 +26,7 @@ if __name__ == '__main__':
     while True:
         src_socket, addr = server.accept()
         dst_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        dst_socket.connect(("www.baidu.com", 80))
+        dst_socket.connect((configs_[0].remote_addr[0][0], int(configs_[0].remote_addr[0][1])))
         nginx_obj = NginxObj(src_socket, dst_socket,config=configs_[0])
         nginx_manager.add(nginx_obj)
         nginx_obj.run()
