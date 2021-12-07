@@ -265,10 +265,43 @@ class NginxManager(object):
 
     def __init__(self):
         self.nginx_objs = []
-        self.configs = []
+        self.config = None
+        self.server = None
 
     def add(self, nginx_obj: NginxObj):
         self.nginx_objs.append(nginx_obj)
+
+    def add_config(self,config):
+        self.config = config
+
+    def build_server(self):
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.server.bind(('localhost', self.config.local_port))
+            self.server.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+            self.server.listen(5)
+        except Exception as e:
+            print("create Server is Error!")
+            print("the exception is ", e)
+
+    def remove_nginx(self):
+        pass
+
+    def run(self):
+        self.build_server()
+        while True:
+            src_socket, addr = self.server.accept()
+            dst_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            dst_socket.connect((self.config.remote_addr[0][0], int(self.config.remote_addr[0][1])))
+            nginx_obj = NginxObj(src_socket, dst_socket, config=self.config)
+            self.nginx_objs.append(nginx_obj)
+            nginx_obj.run()
+    def start(self):
+        print('NginxManager start------')
+        t = threading.Thread(target=self.run,name="Nginx_server",args=())
+        t.start()
+        print('NginxManager end ------')
+
 
 
 if __name__ == '__main__':
