@@ -1,3 +1,4 @@
+import random
 import socket, time
 import threading
 from multiprocessing import pool
@@ -242,7 +243,7 @@ class NginxObj(object):
 
     def shutdown(self):
         '''
-
+        关闭socket 输入和输出
         :return:
         '''
         try:
@@ -267,18 +268,22 @@ class NginxManager(object):
         self.nginx_objs = []
         self.config = None
         self.server = None
+        self.name = ''
+
+    def set_name(self, name: str):
+        self.name = name
 
     def add(self, nginx_obj: NginxObj):
         self.nginx_objs.append(nginx_obj)
 
-    def add_config(self,config):
+    def add_config(self, config):
         self.config = config
 
     def build_server(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.server.bind(('localhost', self.config.local_port))
-            self.server.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+            self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.server.listen(5)
         except Exception as e:
             print("create Server is Error!")
@@ -292,17 +297,22 @@ class NginxManager(object):
         while True:
             src_socket, addr = self.server.accept()
             dst_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            dst_socket.connect((self.config.remote_addr[0][0], int(self.config.remote_addr[0][1])))
+            '''
+                先写一个随机选择算法
+            '''
+            size = len(self.config.remote_addr)
+            index = random.randint(size-1)
+            dst_socket.connect((self.config.remote_addr[index][0], int(self.config.remote_addr[index][1])))
             nginx_obj = NginxObj(src_socket, dst_socket, config=self.config)
             self.nginx_objs.append(nginx_obj)
             nginx_obj.run()
-    def start(self):
-        print('NginxManager start------')
-        t = threading.Thread(target=self.run,name="Nginx_server",args=())
-        t.start()
-        print('NginxManager end ------')
 
+    def start(self):
+        print('NginxManager prepare------', self.name)
+        t = threading.Thread(target=self.run, name=self.name, args=())
+        t.start()
+        print('NginxManager start ------', self.name)
 
 
 if __name__ == '__main__':
-    pass
+    print(random.randint(0,1))
