@@ -19,6 +19,10 @@ class header(object):
         self.clear()
 
     def clear(self):
+        '''
+
+        :return:
+        '''
         # 通用首部
         self.common_info['Connection'] = None
         self.common_info['Date'] = None
@@ -97,6 +101,11 @@ class header(object):
         self.all_info.clear()
 
     def add_info(self, data: str):
+        '''
+
+        :param data:
+        :return:
+        '''
         data = data.strip()
         dats = data.split(":")
         size = len(dats)
@@ -108,6 +117,11 @@ class header(object):
 
 
     def add_url(self, data: str):
+        '''
+
+        :param data:
+        :return:
+        '''
         self.request_url = data.split(' ')
         method = self.request_url[0].lower()
         if method == 'get':
@@ -124,6 +138,10 @@ class header(object):
             self.flag = 5
 
     def string(self):
+        '''
+
+        :return:
+        '''
         result = ""
         for key, value in self.all_info.items():
             if value is None:
@@ -133,6 +151,10 @@ class header(object):
         return result
 
     def string_flag(self):
+        '''
+
+        :return:
+        '''
         result = ""
         for key, value in self.common_info.items():
             if value is None:

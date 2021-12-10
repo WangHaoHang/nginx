@@ -20,8 +20,6 @@ def index(name):
 if __name__ == '__main__':
     t1 = threading.Thread(name='app', target=app.run, args=('localhost', 8808,))
     t2 = threading.Thread(name='app1', target=app1.run, args=('localhost', 8807,))
-    # t1.setDaemon(True)
-    # t2.setDaemon(True)
     # app.run('localhost', 8808)
     t1.start()
     t2.start()

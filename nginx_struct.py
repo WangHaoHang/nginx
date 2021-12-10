@@ -47,17 +47,21 @@ class NginxObj(object):
         :param data:
         :return:
         '''
+        # url
         dats = data.split('\n')
         self.head_info.add_url(dats[0])
         flag = 0
+
         self.xdata = ''
         for dat in dats[1:]:
             if flag == 0:
                 if dat.strip() == '':
                     flag = 1
                 else:
+                    # head
                     self.head_info.add_info(dat)
             else:
+                # body
                 self.xdata += dat + '\n'
         print('head_info-start')
         print(self.head_info.string())
@@ -97,9 +101,16 @@ class NginxObj(object):
         now_url = str(now_url)
         local_url = self.config.local_url
         remote_url = self.config.remote_url[0]
-        if now_url.find(remote_url) >= 0:
-            self.head_info.request_url[1] = now_url.replace(local_url, remote_url)
-
+        print('url:',local_url,remote_url)
+        if now_url.find(local_url) >= 0:
+            if local_url == '/':
+                if str(remote_url).endswith('/'):
+                    self.head_info.request_url[1] = remote_url[0:-1] + now_url
+                else:
+                    self.head_info.request_url[1] = remote_url + now_url[1:]
+            else:
+                self.head_info.request_url[1] = now_url.replace(local_url, remote_url)
+        print('request_url:',self.head_info.request_url[1])
     def send_str(self, sock: socket.socket, data: str):
         '''
 
@@ -296,16 +307,19 @@ class NginxManager(object):
         self.build_server()
         while True:
             src_socket, addr = self.server.accept()
+            print('accept:',addr)
             dst_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             '''
                 先写一个随机选择算法
             '''
             size = len(self.config.remote_addr)
-            index = random.randint(size-1)
+            index = random.randint(0,size-1)
+            print('index:',index)
             dst_socket.connect((self.config.remote_addr[index][0], int(self.config.remote_addr[index][1])))
             nginx_obj = NginxObj(src_socket, dst_socket, config=self.config)
             self.nginx_objs.append(nginx_obj)
-            nginx_obj.run()
+            t3 = threading.Thread(name='nginx_obj',target=nginx_obj.run,args=())
+            t3.start()
 
     def start(self):
         print('NginxManager prepare------', self.name)
