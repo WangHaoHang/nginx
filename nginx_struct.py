@@ -1,7 +1,5 @@
-import random
 import socket, time
 import threading
-from multiprocessing import pool
 from request_header import header
 from config import Config
 import logging
@@ -27,7 +25,7 @@ def transform_info(src_sock: socket.socket, dst_sock: socket.socket):
         buf = buf.replace('localhost:8088', 'www.baidu.com')
         buf = bytes(buf, encoding='utf-8')
         dst_sock.send(buf)
-        print(buf)
+        # print(buf)
     except Exception as e:
         print('Exception:', e)
         flag = False
@@ -63,6 +61,7 @@ class NginxObj(object):
         '''
         # url
         dats = data.split('\n')
+        print('dats[0]:',dats[0])
         self.head_info.add_url(dats[0])
         flag = 0
 
@@ -77,9 +76,9 @@ class NginxObj(object):
             else:
                 # body
                 self.xdata += dat + '\n'
-        print('head_info-start')
-        print(self.head_info.string())
-        print('head_info-end')
+        # print('head_info-start')
+        # print(self.head_info.string())
+        # print('head_info-end')
 
     def get_send_info(self):
         '''
@@ -111,11 +110,12 @@ class NginxObj(object):
             self.head_info.all_info['Host'] = remote_addr
 
         # 修改 request_url
+        # print(self.head_info.request_url)
         now_url = self.head_info.request_url[1]
         now_url = str(now_url)
         local_url = self.config.local_url
         remote_url = self.config.remote_url[self.select_index]
-        print('url:', local_url, remote_url)
+        # print('url:', local_url, remote_url)
         if now_url.find(local_url) >= 0:
             if local_url == '/':
                 if str(remote_url).endswith('/'):
@@ -124,7 +124,7 @@ class NginxObj(object):
                     self.head_info.request_url[1] = remote_url + now_url[1:]
             else:
                 self.head_info.request_url[1] = now_url.replace(local_url, remote_url)
-        print('request_url:', self.head_info.request_url[1])
+        # print('request_url:', self.head_info.request_url[1])
 
     def send_str(self, sock: socket.socket, data: str):
         '''
@@ -163,8 +163,8 @@ class NginxObj(object):
             flag = False
         finally:
             buf = str(buf, encoding='utf-8')
-            if buf.strip() == '':
-                flag = False
+            # if buf.strip() == '':
+            #     flag = True
         return buf, flag
 
     def transform_data(self, src_sock: socket.socket, dst_sock: socket.socket):
@@ -196,7 +196,7 @@ class NginxObj(object):
 
     def src2dst(self):
         '''
-
+        源数据传输到目标接口
         :return:
         '''
 
@@ -208,10 +208,12 @@ class NginxObj(object):
             buf, self.flag = self.recv_str(self.src_sock)
             if not self.flag:
                 break
+            if buf.strip() == "":
+                continue
             self.orgin_context = buf
 
-            print('origin_context:')
-            print(self.orgin_context)
+            # print('origin_context:')
+            # print(self.orgin_context)
 
             # 清空 解析数据
             self.head_info.clear()
@@ -226,23 +228,26 @@ class NginxObj(object):
 
             # 生成新的报文
             buf = self.get_send_info()
-            print('modify_context:')
-            print(buf)
+            # print('modify_context:')
+            # print(self.head_info.string_flag())
+            # print(buf)
             self.flag = self.send_str(self.dst_sock, data=buf)
         print('src2dst End !')
 
     def dst2src(self):
         '''
-
+        目标接口回复的数据传输到源接口
         :return:
         '''
 
         while self.flag:
-            print('the data from destination to the source')
+            # print('the data from destination to the source')
             buf, self.flag = self.recv_str(self.dst_sock)
             if not self.flag:
                 break
-            print(buf, self.flag)
+            # print(buf, self.flag)
+            if buf.strip() == "":
+                continue
             self.flag = self.send_str(self.src_sock, data=buf)
         print('dst2src End !')
 
@@ -251,13 +256,12 @@ class NginxObj(object):
 
         :return:
         '''
-        print('run')
         t1 = threading.Thread(target=self.src2dst, name='src2dst')
         t1.start()
         t2 = threading.Thread(target=self.dst2src, name='dst2src')
         t2.start()
         while True:
-            time.sleep(60)
+            time.sleep(10)
             if not self.flag:
                 print(self.flag, getattr(self.src_sock, "_closed"), getattr(self.dst_sock, "_closed"))
                 break
@@ -285,103 +289,29 @@ class NginxObj(object):
             print('shut down the dst sock!', e)
 
 
-class NginxManager(object):
+from concurrent.futures import ThreadPoolExecutor
+
+
+def func1(name):
     '''
-    进行多个nginx_obj管理
+    测试线程池
+    :param name:
+    :return:
     '''
-
-    def __init__(self):
-        '''
-
-        '''
-        self.nginx_objs = []
-        self.config = None
-        self.server = None
-        self.name = ''
-        self.pool = pool.ThreadPool(10)
-
-    def set_name(self, name: str):
-        '''
-
-        :param name:
-        :return:
-        '''
-        self.name = name
-
-    def add(self, nginx_obj: NginxObj):
-        '''
-
-        :param nginx_obj:
-        :return:
-        '''
-        self.nginx_objs.append(nginx_obj)
-
-    def add_config(self, config):
-        '''
-
-        :param config:
-        :return:
-        '''
-        self.config = config
-
-    def build_server(self):
-        '''
-
-        :return:
-        '''
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.server.bind(('localhost', self.config.local_port))
-            self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.server.listen(5)
-        except Exception as e:
-            print("create Server is Error!")
-            print("the exception is ", e)
-
-    def remove_nginx(self):
-        '''
-
-        :return:
-        '''
-        pass
-
-    def run(self):
-        '''
-        单线程运行
-        :return:
-        '''
-        self.build_server()
-        while True:
-            src_socket, addr = self.server.accept()
-            print('accept:', addr)
-            dst_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            '''
-                先写一个随机选择算法
-            '''
-            size = len(self.config.remote_addr)
-            index = random.randint(0, size - 1)
-            # print('index:',index)
-            # index = size - 1
-            print('addr:', (self.config.remote_addr[index][0], int(self.config.remote_addr[index][1])))
-            dst_socket.connect((self.config.remote_addr[index][0], int(self.config.remote_addr[index][1])))
-            nginx_obj = NginxObj(src_socket, dst_socket, config=self.config)
-            nginx_obj.select_index = index
-            self.nginx_objs.append(nginx_obj)
-            self.pool.apply_async(func=nginx_obj.run,args=())
-
-    def start(self):
-        '''
-        单线程开启
-        :return:
-        '''
-        print('NginxManager prepare------', self.name)
-        t = threading.Thread(target=self.run, name=self.name, args=())
-        t.start()
-        print('NginxManager start ------', self.name)
+    print(name)
+    time.sleep(10)
 
 
 if __name__ == '__main__':
-    print(random.randint(0, 1))
-    logging.error('hello - %s', 'world')
-    pool_ = pool.ThreadPool()
+    # print(random.randint(0, 1))
+    # logging.error('hello - %s', 'world')
+    # pool_ = pool.ThreadPool(4)
+    # for i in range(6):
+    #     result = pool_.apply_async(func=func1,args=(i,))
+    # app_ = result.get()
+    # print(app_)
 
+    pool_ = ThreadPoolExecutor(max_workers=3)
+    task_list = []
+    for i in range(100):
+        pool_.submit(func1, (i,))
