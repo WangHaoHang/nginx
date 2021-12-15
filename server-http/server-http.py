@@ -6,9 +6,9 @@ app = Flask('__name__')
 app1 = Flask('__init__')
 
 
-@app1.route(rule='/test')
-def test():
-    return 'test'
+@app1.route(rule='/test/<name>')
+def test(name):
+    return 'test'+name
 
 
 @app.route(rule='/index/<name>', methods=['GET'])

@@ -14,9 +14,17 @@ def proc_accept(sock:socket.socket):
         if temp != None:
             buf_data += temp
         content = str(buf_data, encoding='utf-8')
-        print("Content:", content)
-        content = "Server:" + content
-        sock.send(bytes(content, encoding='utf-8'))
+        print("Recv:")
+        print(content)
+        header ='HTTP/1.0 200 OK' +'\n\n'
+        print('Send:')
+        content = "<html><body>Hello world!</body></html>"
+        print(header+content)
+        sock.send(bytes(header+content, encoding='utf-8'))
+        time.sleep(10)
+        print(header + content)
+        content = "<html><body>Good Morning</body></html>"
+        sock.send(bytes(header + content, encoding='utf-8'))
         if content == 'EOF':
             sock.shutdown(2)
             sock.close()

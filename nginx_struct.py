@@ -4,34 +4,6 @@ from request_header import header
 from config import Config
 import logging
 
-
-def transform_info(src_sock: socket.socket, dst_sock: socket.socket):
-    '''
-    将源头数据转发到目标源数据
-    :param src_sock: 源 socket
-    :param dst_sock:  目标 socket
-    :return:  flag:True 调用成功， False:调用失败
-    '''
-    flag = True
-    try:
-        buf = bytes()
-        temp = src_sock.recv(1024)
-        while temp is not None and len(temp) == 1024:
-            buf += temp
-            temp = src_sock.recv(1024)
-        if temp is not None:
-            buf += temp
-        buf = str(buf, encoding='utf-8')
-        buf = buf.replace('localhost:8088', 'www.baidu.com')
-        buf = bytes(buf, encoding='utf-8')
-        dst_sock.send(buf)
-        # print(buf)
-    except Exception as e:
-        print('Exception:', e)
-        flag = False
-    return flag
-
-
 class NginxObj(object):
     '''
     进行nginx 点对点传输
@@ -52,6 +24,10 @@ class NginxObj(object):
         self.xdata = ''  # 报文 body 部分
         self.orgin_context = ''  # 源数据
         self.select_index = 0  # 所选的映射下标
+        self.src_sock.setblocking(True)
+        self.dst_sock.setblocking(True)
+        self.src_flag = True
+        self.dst_flag = True
 
     def parse_data(self, data: str):
         '''
@@ -61,7 +37,7 @@ class NginxObj(object):
         '''
         # url
         dats = data.split('\n')
-        print('dats[0]:',dats[0])
+        # print('dats[0]:',dats[0])
         self.head_info.add_url(dats[0])
         flag = 0
 
@@ -121,7 +97,7 @@ class NginxObj(object):
                 if str(remote_url).endswith('/'):
                     self.head_info.request_url[1] = remote_url[0:-1] + now_url
                 else:
-                    self.head_info.request_url[1] = remote_url + now_url[1:]
+                    self.head_info.request_url[1] = remote_url + now_url
             else:
                 self.head_info.request_url[1] = now_url.replace(local_url, remote_url)
         # print('request_url:', self.head_info.request_url[1])
@@ -149,22 +125,24 @@ class NginxObj(object):
         :return:
         '''
         flag = True
-        # sock.settimeout(10)
+        # sock.settimeout(1)
         buf = bytes()
         try:
+            # sock.setblocking(False)
             temp = sock.recv(1024)
             while temp is not None and len(temp) == 1024:
                 buf += temp
                 temp = sock.recv(1024)
             if temp is not None and len(temp) > 0:
                 buf += temp
+            # sock.setblocking(True)
         except Exception as e:
             print('recv str exception:', e)
             flag = False
         finally:
             buf = str(buf, encoding='utf-8')
-            # if buf.strip() == '':
-            #     flag = True
+            if buf.strip() == '':
+                flag = False
         return buf, flag
 
     def transform_data(self, src_sock: socket.socket, dst_sock: socket.socket):
@@ -190,7 +168,7 @@ class NginxObj(object):
             dst_sock.send(buf)
             print(str(buf, encoding='utf-8'))
         except Exception as e:
-            print('Exception:', e)
+            logging.error('Exception:%s',e)
             flag = False
         return flag
 
@@ -200,20 +178,20 @@ class NginxObj(object):
         :return:
         '''
 
-        while self.flag:
-            print('the data from source to the destination')
+        while self.src_flag:
             # 之前成功的方法
             # self.transform_data(self.src_sock,self.dst_sock)
 
-            buf, self.flag = self.recv_str(self.src_sock)
-            if not self.flag:
+            buf, self.src_flag = self.recv_str(self.src_sock)
+            if not self.src_flag:
                 break
-            if buf.strip() == "":
-                continue
+            logging.warning('the data from source to the destination')
+            # print('the data from source to the destination')
             self.orgin_context = buf
 
+            logging.warning('origin_context')
             # print('origin_context:')
-            # print(self.orgin_context)
+            print(self.orgin_context)
 
             # 清空 解析数据
             self.head_info.clear()
@@ -228,28 +206,25 @@ class NginxObj(object):
 
             # 生成新的报文
             buf = self.get_send_info()
+            logging.warning('modify_context:')
             # print('modify_context:')
-            # print(self.head_info.string_flag())
-            # print(buf)
-            self.flag = self.send_str(self.dst_sock, data=buf)
-        print('src2dst End !')
+            print(self.head_info.string_flag()+buf)
+            self.src_flag = self.send_str(self.dst_sock, data=buf)
+        logging.warning('src2dst End!')
 
     def dst2src(self):
         '''
         目标接口回复的数据传输到源接口
         :return:
         '''
-
-        while self.flag:
-            # print('the data from destination to the source')
-            buf, self.flag = self.recv_str(self.dst_sock)
-            if not self.flag:
+        while self.dst_flag:
+            buf, self.dst_flag = self.recv_str(self.dst_sock)
+            if not self.dst_flag:
                 break
-            # print(buf, self.flag)
-            if buf.strip() == "":
-                continue
-            self.flag = self.send_str(self.src_sock, data=buf)
-        print('dst2src End !')
+            logging.warning('the data from destination to the source')
+            print(buf, self.dst_flag)
+            self.dst_flag = self.send_str(self.src_sock, data=buf)
+        logging.warning('dst2src End!')
 
     def run(self):
         '''
@@ -261,8 +236,8 @@ class NginxObj(object):
         t2 = threading.Thread(target=self.dst2src, name='dst2src')
         t2.start()
         while True:
-            time.sleep(10)
-            if not self.flag:
+            # time.sleep(1)
+            if not self.src_flag and not self.dst_flag:
                 print(self.flag, getattr(self.src_sock, "_closed"), getattr(self.dst_sock, "_closed"))
                 break
             # if getattr(self.src_sock,"_closed") == True or getattr(self.dst_sock,"_closed") == True:
@@ -314,4 +289,6 @@ if __name__ == '__main__':
     pool_ = ThreadPoolExecutor(max_workers=3)
     task_list = []
     for i in range(100):
-        pool_.submit(func1, (i,))
+        task = pool_.submit(func1, i)
+        # print(task.result())
+        # print(task.done())

@@ -1,10 +1,9 @@
 import socket, time
 import threading
 import random
-from multiprocessing import pool
 from nginx_struct import NginxObj
 from config import configs, Config
-
+from concurrent.futures import ThreadPoolExecutor
 
 class NginxManager(object):
     '''
@@ -19,8 +18,9 @@ class NginxManager(object):
         self.config = None
         self.server = None
         self.name = ''
-        self.pool = pool.ThreadPool(10)
+        self.pool = ThreadPoolExecutor(max_workers=10)
         self.flag = True
+        self.tasks = []
 
     def set_name(self, name: str):
         '''
@@ -48,7 +48,7 @@ class NginxManager(object):
 
     def build_server(self):
         '''
-
+        建立 server-socket
         :return:
         '''
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -77,7 +77,6 @@ class NginxManager(object):
             src_socket, addr = self.server.accept()
             print('accept:', addr)
             dst_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            # dst_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
             '''
                 先写一个随机选择算法
             '''
@@ -90,8 +89,8 @@ class NginxManager(object):
             nginx_obj = NginxObj(src_socket, dst_socket, config=self.config)
             nginx_obj.select_index = index
             self.nginx_objs.append(nginx_obj)
-            self.pool.apply_async(func=nginx_obj.run, args=())
-
+            task = self.pool.submit(nginx_obj.run)
+            self.tasks.append(task)
     def start(self):
         '''
         单线程开启
