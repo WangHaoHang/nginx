@@ -118,7 +118,7 @@ class header(object):
 
     def add_url(self, data: str):
         '''
-
+        增加 URL
         :param data:
         :return:
         '''
@@ -139,7 +139,7 @@ class header(object):
 
     def string(self):
         '''
-
+        打印所有首部
         :return:
         '''
         result = ""
@@ -152,7 +152,7 @@ class header(object):
 
     def string_flag(self):
         '''
-
+        打印所对应的首部
         :return:
         '''
         result = ""

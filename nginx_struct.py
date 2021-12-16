@@ -189,9 +189,8 @@ class NginxObj(object):
             # print('the data from source to the destination')
             self.orgin_context = buf
 
-            logging.warning('origin_context')
-            # print('origin_context:')
-            print(self.orgin_context)
+            # logging.warning('origin_context')
+            # print(self.orgin_context)
 
             # 清空 解析数据
             self.head_info.clear()
@@ -206,9 +205,8 @@ class NginxObj(object):
 
             # 生成新的报文
             buf = self.get_send_info()
-            logging.warning('modify_context:')
-            # print('modify_context:')
-            print(self.head_info.string_flag()+buf)
+            # logging.warning('modify_context:')
+            # print(self.head_info.string_flag()+buf)
             self.src_flag = self.send_str(self.dst_sock, data=buf)
         logging.warning('src2dst End!')
 
@@ -221,8 +219,8 @@ class NginxObj(object):
             buf, self.dst_flag = self.recv_str(self.dst_sock)
             if not self.dst_flag:
                 break
-            logging.warning('the data from destination to the source')
-            print(buf, self.dst_flag)
+            # logging.warning('the data from destination to the source')
+            # print(buf, self.dst_flag)
             self.dst_flag = self.send_str(self.src_sock, data=buf)
         logging.warning('dst2src End!')
 

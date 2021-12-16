@@ -82,8 +82,6 @@ class NginxManager(object):
             '''
             size = len(self.config.remote_addr)
             index = random.randint(0, size - 1)
-            # print('index:',index)
-            # index = size - 1
             print('addr:', (self.config.remote_addr[index][0], int(self.config.remote_addr[index][1])))
             dst_socket.connect((self.config.remote_addr[index][0], int(self.config.remote_addr[index][1])))
             nginx_obj = NginxObj(src_socket, dst_socket, config=self.config)
