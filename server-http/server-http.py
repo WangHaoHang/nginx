@@ -1,14 +1,14 @@
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response,session,render_template
 import threading
 
 app = Flask('__name__')
 
-app1 = Flask('__init__')
+app1 = Flask('__init__',template_folder=".")
 
 
 @app1.route(rule='/test/<name>')
 def test(name):
-    return 'test'+name
+    return render_template('index.html',name=name)
 
 
 @app.route(rule='/index/<name>', methods=['GET'])

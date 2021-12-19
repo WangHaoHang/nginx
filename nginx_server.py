@@ -89,6 +89,7 @@ class NginxManager(object):
             self.nginx_objs.append(nginx_obj)
             task = self.pool.submit(nginx_obj.run)
             self.tasks.append(task)
+            # break
     def start(self):
         '''
         单线程开启

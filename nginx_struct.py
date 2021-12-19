@@ -4,6 +4,7 @@ from request_header import header
 from config import Config
 import logging
 
+
 class NginxObj(object):
     '''
     进行nginx 点对点传输
@@ -92,7 +93,9 @@ class NginxObj(object):
         local_url = self.config.local_url
         remote_url = self.config.remote_url[self.select_index]
         # print('url:', local_url, remote_url)
-        if now_url.find(local_url) >= 0:
+        if now_url.startswith('/static'):
+            self.head_info.request_url[1] = now_url
+        elif now_url.find(local_url) >= 0:
             if local_url == '/':
                 if str(remote_url).endswith('/'):
                     self.head_info.request_url[1] = remote_url[0:-1] + now_url
@@ -118,12 +121,22 @@ class NginxObj(object):
             flag = False
         return flag
 
+    def send_bytes(self, sock: socket.socket, data: bytes):
+        flag = True
+        try:
+            sock.send(data)
+        except Exception as e:
+            print('send str exception', e)
+            flag = False
+        return flag
+
     def recv_str(self, sock: socket.socket):
         '''
         接收数据
         :param sock: 数据接受端
         :return:
         '''
+        type_flag = 0
         flag = True
         # sock.settimeout(1)
         buf = bytes()
@@ -139,11 +152,15 @@ class NginxObj(object):
         except Exception as e:
             print('recv str exception:', e)
             flag = False
-        finally:
+        try:
             buf = str(buf, encoding='utf-8')
             if buf.strip() == '':
                 flag = False
-        return buf, flag
+            type_flag = 0
+        except Exception as e:
+            print(buf)
+            type_flag = 1
+        return buf, flag, type_flag
 
     def transform_data(self, src_sock: socket.socket, dst_sock: socket.socket):
         '''
@@ -168,7 +185,7 @@ class NginxObj(object):
             dst_sock.send(buf)
             print(str(buf, encoding='utf-8'))
         except Exception as e:
-            logging.error('Exception:%s',e)
+            logging.error('Exception:%s', e)
             flag = False
         return flag
 
@@ -182,15 +199,15 @@ class NginxObj(object):
             # 之前成功的方法
             # self.transform_data(self.src_sock,self.dst_sock)
 
-            buf, self.src_flag = self.recv_str(self.src_sock)
+            buf, self.src_flag, type_flag = self.recv_str(self.src_sock)
             if not self.src_flag:
                 break
             logging.warning('the data from source to the destination')
             # print('the data from source to the destination')
             self.orgin_context = buf
 
-            # logging.warning('origin_context')
-            # print(self.orgin_context)
+            logging.warning('origin_context')
+            print(self.orgin_context)
 
             # 清空 解析数据
             self.head_info.clear()
@@ -205,8 +222,8 @@ class NginxObj(object):
 
             # 生成新的报文
             buf = self.get_send_info()
-            # logging.warning('modify_context:')
-            # print(self.head_info.string_flag()+buf)
+            logging.warning('modify_context:')
+            print(self.head_info.string_flag() + buf)
             self.src_flag = self.send_str(self.dst_sock, data=buf)
         logging.warning('src2dst End!')
 
@@ -216,12 +233,15 @@ class NginxObj(object):
         :return:
         '''
         while self.dst_flag:
-            buf, self.dst_flag = self.recv_str(self.dst_sock)
+            buf, self.dst_flag, type_flag = self.recv_str(self.dst_sock)
             if not self.dst_flag:
                 break
-            # logging.warning('the data from destination to the source')
-            # print(buf, self.dst_flag)
-            self.dst_flag = self.send_str(self.src_sock, data=buf)
+            logging.warning('the data from destination to the source')
+            print(buf, self.dst_flag)
+            if type_flag == 0:
+                self.dst_flag = self.send_str(self.src_sock, data=buf)
+            else:
+                self.dst_flag = self.send_bytes(self.src_sock, data=buf)
         logging.warning('dst2src End!')
 
     def run(self):
