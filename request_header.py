@@ -102,7 +102,7 @@ class header(object):
 
     def add_info(self, data: str):
         '''
-
+        解析信息数据
         :param data:
         :return:
         '''

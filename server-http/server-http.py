@@ -1,14 +1,19 @@
-from flask import Flask, request, make_response,session,render_template
+from flask import Flask, request, make_response, session, render_template
 import threading
 
 app = Flask('__name__')
 
-app1 = Flask('__init__',template_folder=".")
+app1 = Flask('__init__', template_folder=".")
+
+
+@app1.before_request
+def login():
+    print(request.remote_addr, request.environ.get('REMOTE_PORT'), request.path)
 
 
 @app1.route(rule='/test/<name>')
 def test(name):
-    return render_template('index.html',name=name)
+    return render_template('index.html', name=name)
 
 
 @app.route(rule='/index/<name>', methods=['GET'])

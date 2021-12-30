@@ -1,4 +1,7 @@
 class Config(object):
+    '''
+    存储配置数据的数据结构
+    '''
     def __init__(self):
         self.local_port = 80
         self.local_url = '/'
@@ -10,7 +13,7 @@ class Config(object):
 
 def read_config_info(file_name) -> [str]:
     '''
-
+    读取配置数据信息
     :param file_name:
     :return:
     '''
@@ -41,7 +44,7 @@ def pro_line(line: str):
 
 def str2list1(data: str) -> []:
     '''
-
+    字符串转一维数组
     :param data:
     :return:
     '''
@@ -57,7 +60,7 @@ def str2list1(data: str) -> []:
 
 def str2list2(data: str) -> [[]]:
     '''
-
+    字符传转二维数组
     :param data:
     :return:
     '''
@@ -79,7 +82,7 @@ def str2list2(data: str) -> [[]]:
 
 def parse_config(datas: [str]) -> [Config]:
     '''
-
+    解析配置数据
     :param datas:
     :return:
     '''
@@ -119,7 +122,7 @@ def parse_config(datas: [str]) -> [Config]:
 
 def configs():
     '''
-
+    配置文件读取以及解析步骤
     :return:
     '''
     datas = read_config_info('nginx.conf')

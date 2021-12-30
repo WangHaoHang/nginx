@@ -12,19 +12,19 @@ class NginxManager(object):
 
     def __init__(self):
         '''
-
+        初始化
         '''
-        self.nginx_objs = []
-        self.config = None
-        self.server = None
-        self.name = ''
-        self.pool = ThreadPoolExecutor(max_workers=10)
-        self.flag = True
-        self.tasks = []
+        self.nginx_objs = []    # nginx_obj数组
+        self.config = None      # config 配置数据
+        self.server = None      # 服务端，也是nginx端口开放
+        self.name = ''          # 名称
+        self.pool = ThreadPoolExecutor(max_workers=10) # 线程池
+        self.flag = True        # 标志
+        self.tasks = []         # 提交后的任务
 
     def set_name(self, name: str):
         '''
-
+        设置服务名称
         :param name:
         :return:
         '''
@@ -32,7 +32,7 @@ class NginxManager(object):
 
     def add(self, nginx_obj: NginxObj):
         '''
-
+        增加 nginx_obj
         :param nginx_obj:
         :return:
         '''
@@ -40,7 +40,7 @@ class NginxManager(object):
 
     def add_config(self, config):
         '''
-
+        设置配置数据
         :param config:
         :return:
         '''
@@ -62,7 +62,7 @@ class NginxManager(object):
 
     def remove_nginx(self):
         '''
-
+        todo 移除nginx
         :return:
         '''
         pass
