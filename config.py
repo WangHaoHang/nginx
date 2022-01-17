@@ -1,7 +1,30 @@
+class Strategy(object):
+    '''
+    策略模式
+    '''
+    def __init__(self):
+        pass
+
+    def strategy_run(self):
+        pass
+
+
+class Ip_Strategy(Strategy):
+    '''
+    IP 策略
+    '''
+    def __init__(self):
+        super().__init__()
+
+    def strategy_run(self):
+        pass
+
+
 class Config(object):
     '''
     存储配置数据的数据结构
     '''
+
     def __init__(self):
         self.local_port = 80
         self.local_url = '/'
@@ -9,6 +32,22 @@ class Config(object):
         self.remote_url = []
         self.loadbalance_strategy = 0
         self.info = {}
+        self.strategy = None
+
+    def set_strategy(self, strategy: Strategy):
+        '''
+        设置策略
+        :param strategy: 输入策略
+        :return:
+        '''
+        self.strategy = strategy
+
+    def get_remote_info(self):
+        '''
+        根据策略获得ip地址，端口号，以及相对路径
+        :return:
+        '''
+        return
 
 
 def read_config_info(file_name) -> [str]:
@@ -31,8 +70,8 @@ def read_config_info(file_name) -> [str]:
 
 def pro_line(line: str):
     '''
-
-    :param line:
+    处理单行数据
+    :param line: 单行数据
     :return:
     '''
     line = line.strip()
@@ -90,6 +129,8 @@ def parse_config(datas: [str]) -> [Config]:
     temp = None
     for data in datas:
         data = str(data)
+        if data.startswith('#'):
+            continue
         if data.startswith('start'):
             temp = Config()
             continue
@@ -137,6 +178,7 @@ def configs():
         print('info:', conf.info)
         flag += 1
     return configs_
+
 
 if __name__ == '__main__':
     # configs()
