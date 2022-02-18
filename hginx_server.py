@@ -1,7 +1,7 @@
 import socket, time
 import threading
 import random
-from nginx_struct import NginxObj
+from hginx_struct import NginxObj
 from config import configs, Config
 from concurrent.futures import ThreadPoolExecutor
 

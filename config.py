@@ -166,7 +166,7 @@ def configs():
     配置文件读取以及解析步骤
     :return:
     '''
-    datas = read_config_info('nginx.conf')
+    datas = read_config_info('hginx.conf')
     configs_ = parse_config(datas)
     flag = 1
     for conf in configs_:
