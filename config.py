@@ -1,7 +1,11 @@
+import math
+
+
 class Strategy(object):
     '''
     策略模式
     '''
+
     def __init__(self):
         pass
 
@@ -13,11 +17,44 @@ class Ip_Strategy(Strategy):
     '''
     IP 策略
     '''
+
     def __init__(self):
         super().__init__()
 
     def strategy_run(self):
+        '''
+        todo ip策略编写
+        :return:
+        '''
         pass
+
+
+class Weight_Strategy(Strategy):
+    '''
+    Weight 策略
+    '''
+
+    def __init__(self, remote_addr, remote_url):
+        super().__init__()
+        self.record = []
+        self.info = []
+        self.remote_addr = remote_addr
+        self.remote_url = remote_url
+        for r_addr in remote_addr:
+            self.record.append(r_addr[-1])
+            self.info.append(r_addr[-1])
+
+    def strategy_run(self):
+        min_value = -math.inf
+        min_index = -1
+        for i in range(len(self.record)):
+            if self.record[i] > min_value:
+                min_value = self.record[i]
+                min_index = i
+        self.record[min_index] = self.record[min_index] - 1
+        if self.record[min_index] < 0:
+            self.record[min_index] = self.info[min_index]
+        return self.remote_addr[min_index], self.remote_url[min_index]
 
 
 class Config(object):
